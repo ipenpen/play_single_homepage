@@ -5,7 +5,7 @@ networks:
 
 # servers:
 servers:
-  web-server:
+  web_server:
     role: web
     services:
       - httpd
@@ -13,10 +13,10 @@ servers:
       tap1:
         type: gretap
         network: vnet1
-        sequrity-groups:
+        sequrity_groups:
           - sg-httpd
           - sg-shared
-  ap-server:
+  ap_server:
     role: ap
     services:
       - tomcat
@@ -24,10 +24,10 @@ servers:
       tap1:
         type: gretap
         network: vnet1
-        sequrity-groups:
+        sequrity_groups:
           - sg-tomcat
           - sg-shared
-  db-server:
+  db_server:
     role: db
     services:
       - postgres
@@ -35,7 +35,7 @@ servers:
       tap1:
         type: gretap
         network: vnet1
-        sequrity-groups:
+        sequrity_groups:
           - sg-postgres
           - sg-shared
 

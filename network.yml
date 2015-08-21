@@ -1,0 +1,52 @@
+
+# networks
+networks:
+  vnet1:
+
+# servers:
+servers:
+  web-server:
+    role: web
+    services:
+      - httpd
+    interfaces:
+      tap1:
+        type: gretap
+        network: vnet1
+        sequrity-groups:
+          - sg-httpd
+          - sg-shared
+  ap-server:
+    role: ap
+    services:
+      - tomcat
+    interfaces:
+      tap1:
+        type: gretap
+        network: vnet1
+        sequrity-groups:
+          - sg-tomcat
+          - sg-shared
+  db-server:
+    role: db
+    services:
+      - postgres
+    interfaces:
+      tap1:
+        type: gretap
+        network: vnet1
+        sequrity-groups:
+          - sg-postgres
+          - sg-shared
+
+# sequrity_groups
+sequrity_groups:
+  sg-httpd:
+    rules:
+      - tcp:80:0.0.0.0/0
+  sg-tomcat:
+    rules:
+      - tcp:8009:sg-web
+  sg-postgres:
+    rules:
+      - tcp:5432:sg-ap

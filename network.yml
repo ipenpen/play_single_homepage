@@ -46,7 +46,7 @@ security_groups:
       - tcp:80:0.0.0.0/0
   sg-tomcat:
     rules:
-      - tcp:8009:sg-web
+      - tcp:8009:sg-httpd
   sg-postgres:
     rules:
-      - tcp:5432:sg-ap
+      - tcp:5432:sg-tomcat

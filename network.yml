@@ -13,7 +13,7 @@ servers:
       tap1:
         type: gretap
         network: vnet1
-        sequrity_groups:
+        security_groups:
           - sg-httpd
           - sg-shared
   ap_server:
@@ -24,7 +24,7 @@ servers:
       tap1:
         type: gretap
         network: vnet1
-        sequrity_groups:
+        security_groups:
           - sg-tomcat
           - sg-shared
   db_server:
@@ -35,12 +35,12 @@ servers:
       tap1:
         type: gretap
         network: vnet1
-        sequrity_groups:
+        security_groups:
           - sg-postgres
           - sg-shared
 
-# sequrity_groups
-sequrity_groups:
+# security_groups
+security_groups:
   sg-httpd:
     rules:
       - tcp:80:0.0.0.0/0

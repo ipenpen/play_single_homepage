@@ -41,6 +41,7 @@
     },
 
     "DBUser" : {
+      "Default": "admin",
       "NoEcho": "true",
       "Description" : "The WordPress database admin account username",
       "Type": "String",
@@ -51,6 +52,7 @@
     },
 
     "DBPassword" : {
+      "Default": "password",
       "NoEcho": "true",
       "Description" : "The WordPress database admin account password",
       "Type": "String",
@@ -61,6 +63,7 @@
     },
 
     "DBRootPassword" : {
+      "Default": "Root12345",
       "NoEcho": "true",
       "Description" : "MySQL root password",
       "Type": "String",

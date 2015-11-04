@@ -44,39 +44,39 @@ tasks:
     operations:
       - execute:
           script: |
-            clear
+            exit 0
 
   configure:
     description: Execute configure chef
     operations:
       - execute:
           script: |
-            clear
+            exit 0
 
   spec:
     description: Execute serverspec
     operations:
       - execute:
           script: |
-            clear
+            exit 0
 
   deploy:
     description: Execute deploy chef
     operations:
       - execute:
           script: |
-            clear
+            exit 0
 
   backup:
     description: Backup database
     operations:
       - execute:
           script: |
-            clear
+            exit 0
 
   restore:
     description: Restore database on primary
     operations:
       - execute:
           script: |
-            clear
+            exit 0

@@ -1,370 +1,344 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description" : "CloudConductor pattern template",
+
+  "Description" : "AWS CloudFormation Sample Template WordPress_Single_Instance: WordPress is web software you can use to create a beautiful website or blog. This template installs WordPress with a local MySQL database for storage. It demonstrates using the AWS CloudFormation bootstrap scripts to deploy WordPress. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
 
   "Parameters" : {
-    "KeyName" : {
-      "Description" : "Name of an existing EC2/OpenStack KeyPair to enable SSH access to the instances",
+
+    "KeyName": {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
+    },
+
+    "InstanceType" : {
+      "Description" : "WebServer EC2 instance type",
       "Type" : "String",
-      "MinLength" : "1",
-      "MaxLength" : "255",
-      "AllowedPattern" : "[\\x20-\\x7E]*",
-      "ConstraintDescription" : "can contain only ASCII characters."
+      "Default" : "m1.small",
+      "AllowedValues" : [ "t1.micro", "t2.micro", "t2.small", "t2.medium", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge", "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge", "g2.2xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge", "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge", "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge", "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge"]
+,
+      "ConstraintDescription" : "must be a valid EC2 instance type."
     },
-    "SSHLocation" : {
-      "Description" : "The IP address range that can be used to SSH to the EC2/OpenStack instances",
-      "Type" : "String",
-      "MinLength" : "9",
-      "MaxLength" : "18",
-      "Default" : "0.0.0.0/0",
-      "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
-      "ConstraintDescription" : "must be a valid IP CIDR range of the form x.x.x.x/x."
-    },
-    "WebInstanceType" : {
-      "Description" : "WebServer instance type",
-      "Type" : "String",
-      "Default" : "t2.small"
-    },
-    "ApInstanceType" : {
-      "Description" : "APServer instance type",
-      "Type" : "String",
-      "Default" : "t2.small"
-    },
-    "DbInstanceType" : {
-      "Description" : "DBServer instance type",
-      "Type" : "String",
-      "Default" : "t2.small"
-    },
-    "WebImageId" : {
-      "Description" : "[computed] WebServer Image Id. This parameter is automatically filled by CloudConductor.",
-      "Type" : "String"
-    },
-    "ApImageId" : {
-      "Description" : "[computed] APServer Image Id. This parameter is automatically filled by CloudConductor.",
-      "Type" : "String"
-    },
-    "DbImageId" : {
-      "Description" : "[computed] DBServer Image Id. This parameter is automatically filled by CloudConductor.",
-      "Type" : "String"
-    },
-    "CloudConductorLocation" : {
-      "Description" : "The IP address range of CloudConductor server to enable Consul api access to frontend instance.",
-      "Type" : "String",
+
+    "SSHLocation": {
+      "Description": "The IP address range that can be used to SSH to the EC2 instances",
+      "Type": "String",
       "MinLength": "9",
       "MaxLength": "18",
       "Default": "0.0.0.0/0",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+
+    "DBName" : {
+      "Default": "wordpressdb",
+      "Description" : "The WordPress database name",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+    },
+
+    "DBUser" : {
+      "NoEcho": "true",
+      "Description" : "The WordPress database admin account username",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "16",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+    },
+
+    "DBPassword" : {
+      "NoEcho": "true",
+      "Description" : "The WordPress database admin account password",
+      "Type": "String",
+      "MinLength": "8",
+      "MaxLength": "41",
+      "AllowedPattern" : "[a-zA-Z0-9]*",
+      "ConstraintDescription" : "must contain only alphanumeric characters."
+    },
+
+    "DBRootPassword" : {
+      "NoEcho": "true",
+      "Description" : "MySQL root password",
+      "Type": "String",
+      "MinLength": "8",
+      "MaxLength": "41",
+      "AllowedPattern" : "[a-zA-Z0-9]*",
+      "ConstraintDescription" : "must contain only alphanumeric characters."
     }
   },
 
   "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "t1.micro"    : { "Arch" : "PV64"   },
+      "t2.micro"    : { "Arch" : "HVM64"  },
+      "t2.small"    : { "Arch" : "HVM64"  },
+      "t2.medium"   : { "Arch" : "HVM64"  },
+      "m1.small"    : { "Arch" : "PV64"   },
+      "m1.medium"   : { "Arch" : "PV64"   },
+      "m1.large"    : { "Arch" : "PV64"   },
+      "m1.xlarge"   : { "Arch" : "PV64"   },
+      "m2.xlarge"   : { "Arch" : "PV64"   },
+      "m2.2xlarge"  : { "Arch" : "PV64"   },
+      "m2.4xlarge"  : { "Arch" : "PV64"   },
+      "m3.medium"   : { "Arch" : "HVM64"  },
+      "m3.large"    : { "Arch" : "HVM64"  },
+      "m3.xlarge"   : { "Arch" : "HVM64"  },
+      "m3.2xlarge"  : { "Arch" : "HVM64"  },
+      "c1.medium"   : { "Arch" : "PV64"   },
+      "c1.xlarge"   : { "Arch" : "PV64"   },
+      "c3.large"    : { "Arch" : "HVM64"  },
+      "c3.xlarge"   : { "Arch" : "HVM64"  },
+      "c3.2xlarge"  : { "Arch" : "HVM64"  },
+      "c3.4xlarge"  : { "Arch" : "HVM64"  },
+      "c3.8xlarge"  : { "Arch" : "HVM64"  },
+      "c4.large"    : { "Arch" : "HVM64"  },
+      "c4.xlarge"   : { "Arch" : "HVM64"  },
+      "c4.2xlarge"  : { "Arch" : "HVM64"  },
+      "c4.4xlarge"  : { "Arch" : "HVM64"  },
+      "c4.8xlarge"  : { "Arch" : "HVM64"  },
+      "g2.2xlarge"  : { "Arch" : "HVMG2"  },
+      "r3.large"    : { "Arch" : "HVM64"  },
+      "r3.xlarge"   : { "Arch" : "HVM64"  },
+      "r3.2xlarge"  : { "Arch" : "HVM64"  },
+      "r3.4xlarge"  : { "Arch" : "HVM64"  },
+      "r3.8xlarge"  : { "Arch" : "HVM64"  },
+      "i2.xlarge"   : { "Arch" : "HVM64"  },
+      "i2.2xlarge"  : { "Arch" : "HVM64"  },
+      "i2.4xlarge"  : { "Arch" : "HVM64"  },
+      "i2.8xlarge"  : { "Arch" : "HVM64"  },
+      "d2.xlarge"   : { "Arch" : "HVM64"  },
+      "d2.2xlarge"  : { "Arch" : "HVM64"  },
+      "d2.4xlarge"  : { "Arch" : "HVM64"  },
+      "d2.8xlarge"  : { "Arch" : "HVM64"  },
+      "hi1.4xlarge" : { "Arch" : "HVM64"  },
+      "hs1.8xlarge" : { "Arch" : "HVM64"  },
+      "cr1.8xlarge" : { "Arch" : "HVM64"  },
+      "cc2.8xlarge" : { "Arch" : "HVM64"  }
+    },
+
+    "AWSInstanceType2NATArch" : {
+      "t1.micro"    : { "Arch" : "NATPV64"   },
+      "t2.micro"    : { "Arch" : "NATHVM64"  },
+      "t2.small"    : { "Arch" : "NATHVM64"  },
+      "t2.medium"   : { "Arch" : "NATHVM64"  },
+      "m1.small"    : { "Arch" : "NATPV64"   },
+      "m1.medium"   : { "Arch" : "NATPV64"   },
+      "m1.large"    : { "Arch" : "NATPV64"   },
+      "m1.xlarge"   : { "Arch" : "NATPV64"   },
+      "m2.xlarge"   : { "Arch" : "NATPV64"   },
+      "m2.2xlarge"  : { "Arch" : "NATPV64"   },
+      "m2.4xlarge"  : { "Arch" : "NATPV64"   },
+      "m3.medium"   : { "Arch" : "NATHVM64"  },
+      "m3.large"    : { "Arch" : "NATHVM64"  },
+      "m3.xlarge"   : { "Arch" : "NATHVM64"  },
+      "m3.2xlarge"  : { "Arch" : "NATHVM64"  },
+      "c1.medium"   : { "Arch" : "NATPV64"   },
+      "c1.xlarge"   : { "Arch" : "NATPV64"   },
+      "c3.large"    : { "Arch" : "NATHVM64"  },
+      "c3.xlarge"   : { "Arch" : "NATHVM64"  },
+      "c3.2xlarge"  : { "Arch" : "NATHVM64"  },
+      "c3.4xlarge"  : { "Arch" : "NATHVM64"  },
+      "c3.8xlarge"  : { "Arch" : "NATHVM64"  },
+      "c4.large"    : { "Arch" : "NATHVM64"  },
+      "c4.xlarge"   : { "Arch" : "NATHVM64"  },
+      "c4.2xlarge"  : { "Arch" : "NATHVM64"  },
+      "c4.4xlarge"  : { "Arch" : "NATHVM64"  },
+      "c4.8xlarge"  : { "Arch" : "NATHVM64"  },
+      "g2.2xlarge"  : { "Arch" : "NATHVMG2"  },
+      "r3.large"    : { "Arch" : "NATHVM64"  },
+      "r3.xlarge"   : { "Arch" : "NATHVM64"  },
+      "r3.2xlarge"  : { "Arch" : "NATHVM64"  },
+      "r3.4xlarge"  : { "Arch" : "NATHVM64"  },
+      "r3.8xlarge"  : { "Arch" : "NATHVM64"  },
+      "i2.xlarge"   : { "Arch" : "NATHVM64"  },
+      "i2.2xlarge"  : { "Arch" : "NATHVM64"  },
+      "i2.4xlarge"  : { "Arch" : "NATHVM64"  },
+      "i2.8xlarge"  : { "Arch" : "NATHVM64"  },
+      "d2.xlarge"   : { "Arch" : "NATHVM64"  },
+      "d2.2xlarge"  : { "Arch" : "NATHVM64"  },
+      "d2.4xlarge"  : { "Arch" : "NATHVM64"  },
+      "d2.8xlarge"  : { "Arch" : "NATHVM64"  },
+      "hi1.4xlarge" : { "Arch" : "NATHVM64"  },
+      "hs1.8xlarge" : { "Arch" : "NATHVM64"  },
+      "cr1.8xlarge" : { "Arch" : "NATHVM64"  },
+      "cc2.8xlarge" : { "Arch" : "NATHVM64"  }
+    }
+,
+    "AWSRegionArch2AMI" : {
+      "us-east-1"        : {"PV64" : "ami-5fb8c835", "HVM64" : "ami-60b6c60a", "HVMG2" : "ami-e998ea83"},
+      "us-west-2"        : {"PV64" : "ami-d93622b8", "HVM64" : "ami-f0091d91", "HVMG2" : "ami-315f4850"},
+      "us-west-1"        : {"PV64" : "ami-56ea8636", "HVM64" : "ami-d5ea86b5", "HVMG2" : "ami-943956f4"},
+      "eu-west-1"        : {"PV64" : "ami-95e33ce6", "HVM64" : "ami-bff32ccc", "HVMG2" : "ami-83fd23f0"},
+      "eu-central-1"     : {"PV64" : "ami-794a5915", "HVM64" : "ami-bc5b48d0", "HVMG2" : "ami-ba1a09d6"},
+      "ap-northeast-1"   : {"PV64" : "ami-393c1957", "HVM64" : "ami-383c1956", "HVMG2" : "ami-08e5c166"},
+      "ap-southeast-1"   : {"PV64" : "ami-34bd7a57", "HVM64" : "ami-c9b572aa", "HVMG2" : "ami-5a15d239"},
+      "ap-southeast-2"   : {"PV64" : "ami-ced887ad", "HVM64" : "ami-48d38c2b", "HVMG2" : "ami-0c1a446f"},
+      "sa-east-1"        : {"PV64" : "ami-7d15ad11", "HVM64" : "ami-6817af04", "HVMG2" : "NOT_SUPPORTED"},
+      "cn-north-1"       : {"PV64" : "ami-18ac6575", "HVM64" : "ami-43a36a2e", "HVMG2" : "NOT_SUPPORTED"}
+    }
+
   },
 
   "Resources" : {
-    "VPC" : {
-      "Type" : "AWS::EC2::VPC",
+    "WebServerSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "CidrBlock" : "10.0.0.0/16"
+        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer + SSH access",
+        "SecurityGroupIngress" : [
+          {"IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0"},
+          {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref" : "SSHLocation"}}
+        ]
       }
     },
-    "Subnet" : {
-      "Type" : "AWS::EC2::Subnet",
-      "Properties" : {
-        "CidrBlock" : "10.0.1.0/24",
-        "VpcId" : { "Ref" : "VPC" }
-      }
-    },
-    "InternetGateway" : {
-      "Type" : "AWS::EC2::InternetGateway"
-    },
-    "VPCGatewayAttachment" : {
-      "Type" : "AWS::EC2::VPCGatewayAttachment",
-      "Properties" : {
-        "InternetGatewayId" : { "Ref" : "InternetGateway" },
-        "VpcId" : { "Ref" : "VPC" }
-      }
-    },
-    "RouteTable" : {
-      "Type" : "AWS::EC2::RouteTable",
-      "Properties" : {
-        "VpcId" : { "Ref" : "VPC" }
-      }
-    },
-    "RouteToInternetGateway" : {
-      "Type" : "AWS::EC2::Route",
-      "DependsOn": "VPCGatewayAttachment",
-      "Properties" : {
-        "DestinationCidrBlock" : "0.0.0.0/0",
-        "GatewayId" : { "Ref" : "InternetGateway" },
-        "RouteTableId" : { "Ref" : "RouteTable" }
-      }
-    },
-    "SubnetRouteTableAssociation" : {
-      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
-      "Properties" : {
-        "SubnetId" : { "Ref" : "Subnet" },
-        "RouteTableId" : { "Ref" : "RouteTable" }
-      }
-    },
-    "WebServer" : {
+
+    "WebServer": {
       "Type" : "AWS::EC2::Instance",
       "Metadata" : {
-        "Role" : "web",
-        "Frontend" : "true"
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {
+            "wordpress_install" : ["install_cfn", "install_wordpress", "configure_wordpress" ]
+          },
+          "install_cfn" : {
+            "files": {
+              "/etc/cfn/cfn-hup.conf": {
+                "content": { "Fn::Join": [ "", [
+                  "[main]\n",
+                  "stack=", { "Ref": "AWS::StackId" }, "\n",
+                  "region=", { "Ref": "AWS::Region" }, "\n"
+                ]]},
+                "mode"  : "000400",
+                "owner" : "root",
+                "group" : "root"
+              },
+              "/etc/cfn/hooks.d/cfn-auto-reloader.conf": {
+                "content": { "Fn::Join": [ "", [
+                  "[cfn-auto-reloader-hook]\n",
+                  "triggers=post.update\n",
+                  "path=Resources.WebServer.Metadata.AWS::CloudFormation::Init\n",
+                  "action=/opt/aws/bin/cfn-init -v ",
+                          "         --stack ", { "Ref" : "AWS::StackName" },
+                          "         --resource WebServer ",
+                          "         --configsets wordpress_install ",
+                          "         --region ", { "Ref" : "AWS::Region" }, "\n"
+                ]]},          
+                "mode"  : "000400",
+                "owner" : "root",
+                "group" : "root"
+              }
+            },
+            "services" : {
+              "sysvinit" : {
+                "cfn-hup" : { "enabled" : "true", "ensureRunning" : "true",
+                              "files" : ["/etc/cfn/cfn-hup.conf", "/etc/cfn/hooks.d/cfn-auto-reloader.conf"] }
+              }
+            }
+          },
+
+          "install_wordpress" : {
+            "packages" : {
+              "yum" : {
+                "php"          : [],
+                "php-mysql"    : [],
+                "mysql"        : [],
+                "mysql-server" : [],
+                "mysql-devel"  : [],
+                "mysql-libs"   : [],
+                "httpd"        : []
+              }
+            },
+            "sources" : {
+              "/var/www/html" : "http://wordpress.org/latest.tar.gz"
+            },
+            "files" : {
+              "/tmp/setup.mysql" : {
+                "content" : { "Fn::Join" : ["", [
+                  "CREATE DATABASE ", { "Ref" : "DBName" }, ";\n",
+                  "CREATE USER '", { "Ref" : "DBUser" }, "'@'localhost' IDENTIFIED BY '", { "Ref" : "DBPassword" }, "';\n",
+                  "GRANT ALL ON ", { "Ref" : "DBName" }, ".* TO '", { "Ref" : "DBUser" }, "'@'localhost';\n",
+                  "FLUSH PRIVILEGES;\n"
+                ]]},
+                "mode"  : "000400",
+                "owner" : "root",
+                "group" : "root"
+              },
+
+              "/tmp/create-wp-config" : {
+                "content" : { "Fn::Join" : [ "", [
+                  "#!/bin/bash -xe\n",
+                  "cp /var/www/html/wordpress/wp-config-sample.php /var/www/html/wordpress/wp-config.php\n",
+                  "sed -i \"s/'database_name_here'/'",{ "Ref" : "DBName" }, "'/g\" wp-config.php\n",
+                  "sed -i \"s/'username_here'/'",{ "Ref" : "DBUser" }, "'/g\" wp-config.php\n",
+                  "sed -i \"s/'password_here'/'",{ "Ref" : "DBPassword" }, "'/g\" wp-config.php\n"
+                ]]},
+                "mode" : "000500",
+                "owner" : "root",
+                "group" : "root"
+              }
+            },
+            "services" : {
+              "sysvinit" : {
+                "httpd"  : { "enabled" : "true", "ensureRunning" : "true" },
+                "mysqld" : { "enabled" : "true", "ensureRunning" : "true" }
+              }
+            }
+          },
+
+          "configure_wordpress" : {
+            "commands" : {
+              "01_set_mysql_root_password" : {
+                "command" : { "Fn::Join" : ["", ["mysqladmin -u root password '", { "Ref" : "DBRootPassword" }, "'"]]},
+                "test" : { "Fn::Join" : ["", ["$(mysql ", { "Ref" : "DBName" }, " -u root --password='", { "Ref" : "DBRootPassword" }, "' >/dev/null 2>&1 </dev/null); (( $? != 0 ))"]]}
+              },
+              "02_create_database" : {
+                "command" : { "Fn::Join" : ["", ["mysql -u root --password='", { "Ref" : "DBRootPassword" }, "' < /tmp/setup.mysql"]]},
+                "test" : { "Fn::Join" : ["", ["$(mysql ", { "Ref" : "DBName" }, " -u root --password='", { "Ref" : "DBRootPassword" }, "' >/dev/null 2>&1 </dev/null); (( $? != 0 ))"]]}
+              },
+              "03_configure_wordpress" : {
+                "command" : "/tmp/create-wp-config",
+                "cwd" : "/var/www/html/wordpress"
+              }
+            }
+          }
+        }
       },
-      "Properties" : {
-        "ImageId" : { "Ref" : "WebImageId" },
-        "InstanceType" : { "Ref" : "WebInstanceType" },
-        "KeyName" : { "Ref" : "KeyName" },
-        "NetworkInterfaces" : [{
-           "DeviceIndex" : "0",
-           "NetworkInterfaceId" : { "Ref" : "WebNetworkInterface" }
-        }],
+      "Properties": {
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" },
+                          { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
+        "InstanceType"   : { "Ref" : "InstanceType" },
+        "SecurityGroups" : [ {"Ref" : "WebServerSecurityGroup"} ],
+        "KeyName"        : { "Ref" : "KeyName" },
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
-          "#!/bin/sh -v\n",
-          "# Helper function\n",
-          "function error_exit\n",
-          "{\n",
-          "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WebWaitHandle" }, "'\n",
-          "  exit 1\n",
-          "}\n",
-          "# Set Parameters\n",
-          "/bin/echo 'ROLE=web' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'STACK_NAME=", { "Ref": "AWS::StackName" }, "' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'RESOURCE_NAME=WebServer' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'REGION=", { "Ref": "AWS::Region" }, "' >> /opt/cloudconductor/config\n",
-          "# Run Consul\n",
-          "# this process is required because of init sequence.\n",
-          "/etc/init.d/consul start || error_exit 'Failed to start consul agent'\n",
-          "# Wait member-join event\n",
-          "host_name=`hostname`\n",
-          "for i in `seq 10`; do\n",
-          "  if [ ! -z \"`/usr/local/bin/consul members | grep ${host_name}`\" ]; then\n",
-          "    # Send success signal\n",
-          "    /opt/aws/bin/cfn-signal -e 0 -r 'WebServer Setup complete' '", { "Ref" : "WebWaitHandle" }, "'\n",
-          "    exit 0\n",
-          "  fi\n",
-          "  sleep 1\n",
-          "done\n",
-          "error_exit 'Failed to join the consul cluster.'\n"
-        ]]}},
-        "Tags" : [{"Key": "Name", "Value": "WebServer"}, {"Key": "Role", "Value": "web"}]
-      }
-    },
-    "WebNetworkInterface" : {
-      "Type" : "AWS::EC2::NetworkInterface",
-      "Properties" : {
-        "GroupSet" : [{"Ref": "SharedSecurityGroup"}, {"Ref": "WebSecurityGroup"}],
-        "SubnetId" : { "Ref" : "Subnet" }
-      }
-    },
-    "FrontendEIP" : {
-      "Type" : "AWS::EC2::EIP",
-      "DependsOn" : ["VPCGatewayAttachment", "SubnetRouteTableAssociation"],
-      "Properties" : {
-        "Domain" : "vpc"
-      }
-    },
-    "EIPAssociation" : {
-      "Type" : "AWS::EC2::EIPAssociation",
-      "DependsOn" : "WebServer",
-      "Properties" : {
-        "AllocationId" : { "Fn::GetAtt" : [ "FrontendEIP", "AllocationId" ]},
-        "NetworkInterfaceId" : { "Ref" : "WebNetworkInterface" }
-      }
-    },
-    "SharedSecurityGroup" : {
-      "Type" : "AWS::EC2::SecurityGroup",
-      "Properties" : {
-        "GroupDescription" : "Shared security group over all instances in platform/optional pattern",
-        "VpcId" : { "Ref" : "VPC" },
-        "SecurityGroupIngress" : [
-          {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref" : "SSHLocation" }},
-          {"IpProtocol" : "tcp", "FromPort" : "8501", "ToPort" : "8501", "CidrIp" : { "Ref" : "CloudConductorLocation" }},
-          {"IpProtocol" : "tcp", "FromPort" : "8300", "ToPort" : "8302", "CidrIp" : "10.0.0.0/16"}
-        ]
-      }
-    },
-    "WebSecurityGroup" : {
-      "Type" : "AWS::EC2::SecurityGroup",
-      "Properties" : {
-        "GroupDescription" : "Enable SSH access, HTTP access via port 80",
-        "VpcId" : { "Ref" : "VPC" },
-        "SecurityGroupIngress" : [
-          {"IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0"}
-        ]
-      }
-    },
-    "APServer" : {
-      "Type" : "AWS::EC2::Instance",
-      "DependsOn" : "WebWaitCondition",
-      "Metadata" : {
-        "Role" : "ap"
+                       "#!/bin/bash -xe\n",
+                       "yum update -y aws-cfn-bootstrap\n",
+
+                       "/opt/aws/bin/cfn-init -v ",
+                       "         --stack ", { "Ref" : "AWS::StackName" },
+                       "         --resource WebServer ",
+                       "         --configsets wordpress_install ",
+                       "         --region ", { "Ref" : "AWS::Region" }, "\n",
+
+                       "/opt/aws/bin/cfn-signal -e $? ",
+                       "         --stack ", { "Ref" : "AWS::StackName" },
+                       "         --resource WebServer ",
+                       "         --region ", { "Ref" : "AWS::Region" }, "\n"
+        ]]}}
       },
-      "Properties" : {
-        "ImageId" : { "Ref" : "ApImageId" },
-        "InstanceType" : { "Ref" : "ApInstanceType" },
-        "KeyName" : { "Ref" : "KeyName" },
-        "NetworkInterfaces" : [{
-           "DeviceIndex" : "0",
-           "AssociatePublicIpAddress" : true,
-           "SubnetId" : { "Ref" : "Subnet" },
-           "GroupSet" : [{"Ref": "SharedSecurityGroup"}, {"Ref": "APSecurityGroup"}]
-        }],
-        "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
-          "#!/bin/sh -v\n",
-          "# Helper function\n",
-          "function error_exit\n",
-          "{\n",
-          "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "APWaitHandle" }, "'\n",
-          "  exit 1\n",
-          "}\n",
-          "# Set Parameters\n",
-          "/bin/echo 'ROLE=ap' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'STACK_NAME=", { "Ref": "AWS::StackName" }, "' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'RESOURCE_NAME=APServer' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'REGION=", { "Ref": "AWS::Region" }, "' >> /opt/cloudconductor/config\n",
-          "# Run Consul\n",
-          "# this process is required because of init sequence.\n",
-          "/etc/init.d/consul start || error_exit 'Failed to start consul agent'\n",
-          "# Wait member-join event\n",
-          "host_name=`hostname`\n",
-          "for i in `seq 10`; do\n",
-          "  if [ ! -z \"`/usr/local/bin/consul members | grep ${host_name}`\" ]; then\n",
-          "    # Send success signal\n",
-          "    /opt/aws/bin/cfn-signal -e 0 -r 'APServer Setup complete' '", { "Ref" : "APWaitHandle" }, "'\n",
-          "    exit 0\n",
-          "  fi\n",
-          "  sleep 1\n",
-          "done\n",
-          "error_exit 'Failed to join the consul cluster.'\n"
-        ]]}},
-        "Tags" : [{"Key": "Name", "Value": "APServer"}, {"Key": "Role", "Value": "ap"}]
-      }
-    },
-    "APSecurityGroup" : {
-      "Type" : "AWS::EC2::SecurityGroup",
-      "Properties" : {
-        "GroupDescription" : "Enable AJP access via / JMX access",
-        "VpcId" : { "Ref" : "VPC" },
-        "SecurityGroupIngress" : [
-          {"IpProtocol" : "tcp", "FromPort" : "8009", "ToPort" : "8009", "SourceSecurityGroupId" : {"Ref": "WebSecurityGroup"}},
-          {"IpProtocol" : "tcp", "FromPort" : "12345", "ToPort" : "12346", "CidrIp" : "10.0.0.0/16"}
-        ]
-      }
-    },
-    "DBServer" : {
-      "Type" : "AWS::EC2::Instance",
-      "DependsOn" : "WebWaitCondition",
-      "Metadata" : {
-        "Role" : "db"
-      },
-      "Properties" : {
-        "ImageId" : { "Ref" : "DbImageId" },
-        "InstanceType" : { "Ref" : "DbInstanceType" },
-        "KeyName" : { "Ref" : "KeyName" },
-        "NetworkInterfaces" : [{
-           "DeviceIndex" : "0",
-           "AssociatePublicIpAddress" : true,
-           "SubnetId" : { "Ref" : "Subnet" },
-           "GroupSet" : [{"Ref": "SharedSecurityGroup"}, {"Ref": "DBSecurityGroup"}]
-        }],
-        "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
-          "#!/bin/sh -v\n",
-          "# Helper function\n",
-          "function error_exit\n",
-          "{\n",
-          "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "DBWaitHandle" }, "'\n",
-          "  exit 1\n",
-          "}\n",
-          "# Set Parameters\n",
-          "/bin/echo 'ROLE=db' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'STACK_NAME=", { "Ref": "AWS::StackName" }, "' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'RESOURCE_NAME=DBServer' >> /opt/cloudconductor/config\n",
-          "/bin/echo 'REGION=", { "Ref": "AWS::Region" }, "' >> /opt/cloudconductor/config\n",
-          "# Run Consul\n",
-          "# this process is required because of init sequence.\n",
-          "/etc/init.d/consul start || error_exit 'Failed to start consul agent'\n",
-          "# Wait member-join event\n",
-          "host_name=`hostname`\n",
-          "for i in `seq 10`; do\n",
-          "  if [ ! -z \"`/usr/local/bin/consul members | grep ${host_name}`\" ]; then\n",
-          "    # Send success signal\n",
-          "    /opt/aws/bin/cfn-signal -e 0 -r 'DBServer Setup complete' '", { "Ref" : "DBWaitHandle" }, "'\n",
-          "    exit 0\n",
-          "  fi\n",
-          "  sleep 1\n",
-          "done\n",
-          "error_exit 'Failed to join the consul cluster.'\n"
-        ]]}},
-        "Tags" : [{"Key": "Name", "Value": "DBServer"}, {"Key": "Role", "Value": "db"}]
-      }
-    },
-    "DBSecurityGroup" : {
-      "Type" : "AWS::EC2::SecurityGroup",
-      "Properties" : {
-        "GroupDescription" : "Enable DB access via port 5432",
-        "VpcId" : { "Ref" : "VPC" },
-        "SecurityGroupIngress" : [
-          {"IpProtocol" : "tcp", "FromPort" : "5432", "ToPort" : "5432", "SourceSecurityGroupId" : {"Ref": "APSecurityGroup"}}
-        ]
-      }
-    },
-    "WebWaitHandle" : {
-      "Type" : "AWS::CloudFormation::WaitConditionHandle"
-    },
-    "WebWaitCondition" : {
-      "Type" : "AWS::CloudFormation::WaitCondition",
-      "DependsOn" : "WebServer",
-      "Properties" : {
-        "Handle" : { "Ref" : "WebWaitHandle" },
-        "Timeout" : "600"
-      }
-    },
-    "APWaitHandle" : {
-      "Type" : "AWS::CloudFormation::WaitConditionHandle"
-    },
-    "APWaitCondition" : {
-      "Type" : "AWS::CloudFormation::WaitCondition",
-      "DependsOn" : "APServer",
-      "Properties" : {
-        "Handle" : { "Ref" : "APWaitHandle" },
-        "Timeout" : "600"
-      }
-    },
-    "DBWaitHandle" : {
-      "Type" : "AWS::CloudFormation::WaitConditionHandle"
-    },
-    "DBWaitCondition" : {
-      "Type" : "AWS::CloudFormation::WaitCondition",
-      "DependsOn" : "DBServer",
-      "Properties" : {
-        "Handle" : { "Ref" : "DBWaitHandle" },
-        "Timeout" : "600"
+      "CreationPolicy" : {
+        "ResourceSignal" : {
+          "Timeout" : "PT15M"
+        }
       }
     }
   },
+
   "Outputs" : {
-    "FrontendAddress" : {
-      "Value" : { "Ref" : "FrontendEIP" },
-      "Description" : "Frontend DNS name or IP address to access Consul api port from CloudConductor server. This output is required."
-    },
-    "VpcId" : {
-      "Value" : { "Ref" : "VPC" },
-      "Description" : "Reference of VPC to create subnet, security group on same VPC in optional pattern. This output is required."
-    },
-    "SubnetId" : {
-      "Value" : { "Ref" : "Subnet" },
-      "Description" : "Reference of subnet to connect same subnet when create instance in optional pattern. This output is required."
-    },
-    "ClusterAddresses" : {
-      "Value" : { "Fn::GetAtt" : ["WebNetworkInterface", "PrimaryPrivateIpAddress"] },
-      "Description" : "Private IP Address to join cluster. This output is required."
-    },
-    "SharedSecurityGroup" : {
-      "Value" : { "Ref" : "SharedSecurityGroup" },
-      "Description" : "Reference of shared security group to add rules from optional pattern. This output is required."
+    "WebsiteURL" : {
+      "Value" : { "Fn::Join" : ["", ["http://", { "Fn::GetAtt" : [ "WebServer", "PublicDnsName" ]}, "/wordpress" ]]},
+      "Description" : "WordPress Website"
     }
   }
 }

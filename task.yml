@@ -14,5 +14,69 @@ default:
       - cloudconductor
 
 events:
+  setup:
+    description: Execute setup
+    task: setup
+
+  configure:
+    description: Execute configure chef
+    task: configure
+
+  spec:
+    description: Execute spec
+    task: spec
+
+  deploy:
+    description: Execute deploy
+    task: deploy
+
+  backup:
+    description: Execute backup
+    task: backup
+
+  restore:
+    description: Execute restore
+    task: restore
 
 tasks:
+  setup:
+    description: Execute setup chef
+    operations:
+      - execute:
+          script: |
+            clear
+
+  configure:
+    description: Execute configure chef
+    operations:
+      - execute:
+          script: |
+            clear
+
+  spec:
+    description: Execute serverspec
+    operations:
+      - execute:
+          script: |
+            clear
+
+  deploy:
+    description: Execute deploy chef
+    operations:
+      - execute:
+          script: |
+            clear
+
+  backup:
+    description: Backup database
+    operations:
+      - execute:
+          script: |
+            clear
+
+  restore:
+    description: Restore database on primary
+    operations:
+      - execute:
+          script: |
+            clear
